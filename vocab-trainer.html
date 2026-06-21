@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vocab — Marko</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap');
+
+  :root {
+    --ink: #1a1a2e;
+    --fog: #e8e4dc;
+    --paper: #f5f2eb;
+    --sea: #2d6a8a;
+    --accent: #c94a2b;
+    --muted: #8a8070;
+    --green: #2a7a4b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 2.5rem;
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+  }
+
+  header span {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  /* Progress bar */
+  .progress-track {
+    width: 100%;
+    max-width: 560px;
+    height: 3px;
+    background: var(--fog);
+    border-radius: 2px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--sea);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* Stats row */
+  .stats {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .stats .val { color: var(--ink); font-weight: 500; }
+  .stat-known .val { color: var(--green); }
+  .stat-learning .val { color: var(--accent); }
+
+  /* Card */
+  .card-wrap {
+    width: 100%;
+    max-width: 560px;
+    perspective: 1200px;
+    margin-bottom: 2rem;
+  }
+
+  .card {
+    width: 100%;
+    min-height: 220px;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 0 #ccc4b8, 0 4px 20px rgba(0,0,0,0.07);
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card:hover { transform: translateY(-2px); box-shadow: 0 4px 0 #ccc4b8, 0 8px 28px rgba(0,0,0,0.1); }
+  .card:active { transform: translateY(0); }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--sea);
+  }
+
+  .word {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+  }
+
+  .type-hint {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1.5rem;
+  }
+
+  .tap-hint {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 1rem;
+  }
+
+  .translation {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--fog);
+    width: 100%;
+  }
+
+  .translation.show { display: flex; }
+
+  .trans-text {
+    font-size: 1.2rem;
+    color: var(--sea);
+    font-weight: 500;
+  }
+
+  .example {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-style: italic;
+    max-width: 380px;
+    line-height: 1.5;
+  }
+
+  /* Buttons */
+  .buttons {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 0.9rem 1rem;
+    border: none;
+    border-radius: 4px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+  }
+  .btn small {
+    font-size: 0.65rem;
+    font-weight: 400;
+    opacity: 0.7;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .btn-again  { background: #fef0ed; color: var(--accent); border: 1.5px solid #f5c4bc; }
+  .btn-hard   { background: #fff8ec; color: #b07a1a; border: 1.5px solid #f0d9a0; }
+  .btn-good   { background: #edf6f1; color: var(--green); border: 1.5px solid #b5dcca; }
+  .btn-easy   { background: #e8f2f8; color: var(--sea); border: 1.5px solid #a8cce0; }
+
+  .btn:hover { filter: brightness(0.96); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+
+  .buttons.hidden, .tap-hint.hidden { display: none; }
+
+  /* Session complete */
+  .done {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+    padding: 3rem 2rem;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 0 #ccc4b8;
+    width: 100%;
+    max-width: 560px;
+  }
+  .done.show { display: flex; }
+  .done-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    color: var(--ink);
+  }
+  .done-stats {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .btn-restart {
+    margin-top: 1rem;
+    padding: 0.8rem 2rem;
+    background: var(--ink);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .btn-restart:hover { background: var(--sea); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Vocab · B2→C1</h1>
+  <span id="counter">1 / 40</span>
+</header>
+
+<div class="progress-track">
+  <div class="progress-fill" id="progressFill" style="width:0%"></div>
+</div>
+
+<div class="stats">
+  <div class="stat-known">✓ <span class="val" id="statKnown">0</span> sus</div>
+  <div class="stat-learning">↩ <span class="val" id="statLearning">0</span> à revoir</div>
+  <div><span class="val" id="statRemain">40</span> restants</div>
+</div>
+
+<div class="card-wrap">
+  <div class="card" id="card" onclick="revealCard()">
+    <div class="type-hint" id="typeHint">verbe</div>
+    <div class="word" id="wordDisplay">—</div>
+    <div class="tap-hint" id="tapHint">toucher pour révéler</div>
+    <div class="translation" id="translation">
+      <div class="trans-text" id="transText">—</div>
+      <div class="example" id="exampleText"></div>
+    </div>
+  </div>
+</div>
+
+<div class="buttons hidden" id="buttons">
+  <button class="btn btn-again" onclick="answer(1)">
+    Raté
+    <small>revoir bientôt</small>
+  </button>
+  <button class="btn btn-hard" onclick="answer(2)">
+    Difficile
+    <small>+1 jour</small>
+  </button>
+  <button class="btn btn-good" onclick="answer(3)">
+    Bien
+    <small>+3 jours</small>
+  </button>
+  <button class="btn btn-easy" onclick="answer(4)">
+    Facile
+    <small>+7 jours</small>
+  </button>
+</div>
+
+<div class="done" id="done">
+  <div class="done-title">Session terminée 🎯</div>
+  <div class="done-stats" id="doneStats"></div>
+  <button class="btn-restart" onclick="restartSession()">Recommencer les cartes dues</button>
+  <button class="btn-restart" style="background:var(--muted);margin-top:0.3rem;font-size:0.75rem" onclick="if(confirm('Effacer toute la progression ?')) resetProgress()">↺ Tout réinitialiser</button>
+</div>
+
+<script>
+const vocab = [
+  { word: "to squander", type: "verbe", fr: "gaspiller", ex: "Don't squander this opportunity." },
+  { word: "mischief", type: "nom", fr: "espièglerie / bêtise", ex: "The kids were up to mischief again." },
+  { word: "making out", type: "expression", fr: "rouler des pelles / se peloter", ex: "They were making out in the back of the car." },
+  { word: "scrumptious", type: "adjectif", fr: "succulent, délicieux", ex: "That cake looks absolutely scrumptious." },
+  { word: "to fuss", type: "verbe", fr: "faire des histoires / s'agiter", ex: "Stop fussing — it'll be fine." },
+  { word: "make no fuss", type: "expression", fr: "ne pas faire d'histoires", ex: "She made no fuss about the delay." },
+  { word: "clerk", type: "nom", fr: "employé de bureau / commis", ex: "A desk clerk handed him the key." },
+  { word: "to pinch", type: "verbe", fr: "pincer / piquer (voler)", ex: "Someone pinched my wallet on the metro." },
+  { word: "to warrant", type: "verbe", fr: "justifier / mériter", ex: "The situation warrants immediate action." },
+  { word: "warrant", type: "nom", fr: "mandat (juridique)", ex: "Police obtained a search warrant." },
+  { word: "to indict", type: "verbe", fr: "inculper / mettre en examen", ex: "He was indicted on charges of fraud." },
+  { word: "brass", type: "nom", fr: "laiton / cuivre / les gradés (argot)", ex: "The handles were polished brass." },
+  { word: "precincts", type: "nom", fr: "circonscriptions / commissariat (US)", ex: "The 12th precinct handled the case." },
+  { word: "noteworthy", type: "adjectif", fr: "remarquable / digne d'attention", ex: "Her performance was noteworthy." },
+  { word: "clutter", type: "nom", fr: "désordre / bric-à-brac", ex: "Clear the clutter from your desk." },
+  { word: "cluttered", type: "adjectif", fr: "encombré", ex: "The office was hopelessly cluttered." },
+  { word: "pawnshop", type: "nom", fr: "prêteur sur gage", ex: "He sold his watch at a pawnshop." },
+  { word: "to sprawl", type: "verbe", fr: "s'étaler / s'affaler / s'étendre", ex: "She sprawled across the sofa." },
+  { word: "tenement", type: "nom", fr: "immeuble vétuste / taudis", ex: "Tenements lined the old neighbourhood." },
+  { word: "tenet", type: "nom", fr: "principe / doctrine", ex: "A core tenet of the philosophy." },
+  { word: "to put a tail on", type: "expression", fr: "filer quelqu'un / poser une filature", ex: "They put a tail on the suspect." },
+  { word: "to tip off", type: "verbe", fr: "prévenir / donner un tuyau", ex: "An informant tipped off the police." },
+  { word: "to assume", type: "verbe", fr: "supposer (≠ assumer !)", ex: "Don't assume he already knows. 'Assumer' = to take on / to own." },
+  { word: "take on / undertake", type: "verbe", fr: "assumer (vraie traduction)", ex: "She took on full responsibility." },
+  { word: "wooden", type: "adjectif", fr: "en bois / rigide (jeu d'acteur)", ex: "A wooden floor. / A wooden performance." },
+  { word: "tweezers", type: "nom", fr: "pince à épiler", ex: "Use tweezers to remove the splinter." },
+  { word: "to wince", type: "verbe", fr: "grimacer / tressaillir", ex: "She winced when she saw the bill." },
+  { word: "to raise awareness among", type: "expression", fr: "sensibiliser (quelqu'un à)", ex: "The campaign raised awareness among young voters." },
+  { word: "every other year", type: "expression", fr: "une année sur deux", ex: "The conference is held every other year." },
+  { word: "to haggle (over)", type: "verbe", fr: "marchander / négocier le prix", ex: "He haggled over the price for 20 minutes." },
+  { word: "to write on the fly", type: "expression", fr: "écrire au fil de l'eau / improviser", ex: "I'm writing this on the fly." },
+  { word: "meager", type: "adjectif", fr: "maigre / insuffisant", ex: "A meager salary for such hard work." },
+  { word: "to mull over", type: "verbe", fr: "réfléchir à / peser le pour et le contre", ex: "She mulled it over before deciding." },
+  { word: "bladder", type: "nom", fr: "vessie", ex: "A full bladder after three coffees." },
+  { word: "to perk up", type: "verbe", fr: "se ragaillardir / s'améliorer", ex: "She perked up when she heard the news." },
+  { word: "bleak", type: "adjectif", fr: "morne / sombre / sans espoir", ex: "A bleak landscape. A bleak outlook." },
+  { word: "shambles", type: "nom", fr: "désordre total / pagaille", ex: "The event was a complete shambles." },
+  { word: "to hold up", type: "verbe", fr: "retenir / bloquer / braquer (banque)", ex: "What's holding up the traffic?" },
+  { word: "hamstrung", type: "adjectif", fr: "entravé / paralysé", ex: "Hamstrung by lack of funding." },
+  { word: "whanging on", type: "expression", fr: "continuer à s'acharner / ne pas lâcher l'affaire", ex: "He kept whanging on about the same point." },
+];
+
+// localStorage persistence
+const STORAGE_KEY = 'vocab_marko_progress';
+
+function saveProgress(cardsState) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cardsState));
+  } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch(e) { return null; }
+}
+
+function resetProgress() {
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+// SM-2 interval logic
+function computeNextInterval(card, quality) {
+  // quality: 1=again, 2=hard, 3=good, 4=easy
+  let { interval, repetitions, easeFactor } = card;
+  if (quality === 1) {
+    interval = 0; repetitions = 0;
+  } else {
+    if (repetitions === 0) interval = 1;
+    else if (repetitions === 1) interval = quality === 4 ? 4 : 3;
+    else interval = Math.round(interval * easeFactor);
+    repetitions++;
+    // Adjust ease factor
+    easeFactor = Math.max(1.3, easeFactor + (0.1 - (4 - quality) * 0.08));
+    if (quality === 4) interval = Math.round(interval * 1.3);
+  }
+  const nextReview = Date.now() + interval * 86400000;
+  return { interval, repetitions, easeFactor, nextReview };
+}
+
+// Build cards: merge vocab with saved progress
+const saved = loadProgress() || {};
+let cards = vocab.map((v, i) => ({
+  ...v,
+  id: i,
+  interval:    saved[i]?.interval    ?? 0,
+  nextReview:  saved[i]?.nextReview  ?? 0,
+  repetitions: saved[i]?.repetitions ?? 0,
+  easeFactor:  saved[i]?.easeFactor  ?? 2.5,
+}));
+
+// Due today = nextReview <= now, or never seen
+const now = Date.now();
+let due = cards.filter(c => c.nextReview <= now);
+let queue = shuffle([...due]);
+
+let sessionKnown = 0;
+let sessionLearning = 0;
+let revealed = false;
+let current = null;
+
+// Show "nothing due" if empty
+if (queue.length === 0) {
+  const nextCard = cards.slice().sort((a,b) => a.nextReview - b.nextReview)[0];
+  const hoursUntil = Math.ceil((nextCard.nextReview - now) / 3600000);
+  document.getElementById('card').innerHTML = `
+    <div class="type-hint">session terminée</div>
+    <div class="word" style="font-size:1.4rem">Rien à réviser 🎉</div>
+    <div class="tap-hint" style="display:block;margin-top:1rem">Prochain mot dans ~${hoursUntil}h</div>
+  `;
+  document.getElementById('buttons').classList.add('hidden');
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+if (queue.length > 0) showCard();
+
+function showCard() {
+  if (queue.length === 0) {
+    endSession();
+    return;
+  }
+  current = queue[0];
+  revealed = false;
+
+  document.getElementById('card').style.cursor = 'pointer';
+  document.getElementById('wordDisplay').textContent = current.word;
+  document.getElementById('typeHint').textContent = current.type;
+  document.getElementById('transText').textContent = current.fr;
+  document.getElementById('exampleText').textContent = current.ex || '';
+  document.getElementById('translation').classList.remove('show');
+  document.getElementById('tapHint').classList.remove('hidden');
+  document.getElementById('buttons').classList.add('hidden');
+
+  const total = due.length || vocab.length;
+  const done = total - queue.length;
+  document.getElementById('counter').textContent = `${done + 1} / ${total}`;
+  document.getElementById('progressFill').style.width = `${(done / total) * 100}%`;
+  document.getElementById('statRemain').textContent = queue.length;
+}
+
+function revealCard() {
+  if (revealed) return;
+  revealed = true;
+  document.getElementById('translation').classList.add('show');
+  document.getElementById('tapHint').classList.add('hidden');
+  document.getElementById('buttons').classList.remove('hidden');
+  document.getElementById('card').style.cursor = 'default';
+}
+
+function answer(quality) {
+  queue.shift();
+  const updated = computeNextInterval(current, quality);
+  Object.assign(current, updated);
+
+  // Persist
+  const snapshot = {};
+  cards.forEach(c => { snapshot[c.id] = { interval: c.interval, nextReview: c.nextReview, repetitions: c.repetitions, easeFactor: c.easeFactor }; });
+  saveProgress(snapshot);
+
+  if (quality === 1) {
+    queue.splice(Math.min(5, queue.length), 0, current);
+    sessionLearning++;
+  } else {
+    sessionKnown++;
+  }
+
+  document.getElementById('statKnown').textContent = sessionKnown;
+  document.getElementById('statLearning').textContent = sessionLearning;
+  showCard();
+}
+
+function endSession() {
+  document.getElementById('card').style.display = 'none';
+  document.querySelector('.buttons').style.display = 'none';
+  document.getElementById('progressFill').style.width = '100%';
+
+  const pct = Math.round((sessionKnown / (sessionKnown + sessionLearning || 1)) * 100);
+  const nextDue = cards.filter(c => c.nextReview > Date.now()).sort((a,b) => a.nextReview - b.nextReview)[0];
+  const nextInfo = nextDue ? `Prochain mot dans ~${Math.ceil((nextDue.nextReview - Date.now())/3600000)}h` : '';
+  document.getElementById('doneStats').innerHTML =
+    `${sessionKnown} sus · ${sessionLearning} à revoir · ${pct}% réussite\n\n${nextInfo}\n\nReviens demain pour consolider. 🧠`;
+
+  document.getElementById('done').classList.add('show');
+}
+
+function restartSession() {
+  // Only re-queue cards due now (or failed ones)
+  const nowTs = Date.now();
+  const due = cards.filter(c => c.nextReview <= nowTs);
+  if (due.length === 0) {
+    alert("Aucune carte à réviser pour l'instant. Reviens plus tard !");
+    return;
+  }
+  sessionKnown = 0;
+  sessionLearning = 0;
+  queue = shuffle([...due]);
+  document.getElementById('card').style.display = 'flex';
+  document.getElementById('done').classList.remove('show');
+  document.getElementById('statKnown').textContent = 0;
+  document.getElementById('statLearning').textContent = 0;
+  showCard();
+}
+</script>
+</body>
+</html>
